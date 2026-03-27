@@ -1,116 +1,94 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.2">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그리팅 x 식권대장 결제 연동 플로우</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
+        .mobile-frame { width: 375px; height: 667px; background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .header { background: #333; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; }
+        .content { padding: 20px; flex: 1; overflow-y: auto; }
+        .section-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .pay-method { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .pay-method.active { border-color: #FF5A5A; background-color: #FFF0F0; }
+        .btn-primary { width: 100%; background: #FF5A5A; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-primary:hover { background: #E04848; }
+        
+        /* 앱 오버레이 (식권대장 앱) */
+        .app-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #FF5A5A; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; padding: 20px; box-sizing: border-box; text-align: center; }
+        .app-overlay h2 { margin-bottom: 10px; }
+        .app-overlay p { margin-bottom: 30px; font-size: 14px; opacity: 0.9; }
+        .btn-white { background: white; color: #FF5A5A; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        
+        /* 포인트 입력 영역 (연동 후) */
+        .point-area { display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #eee; }
+        .point-input-group { display: flex; gap: 10px; margin-top: 10px; }
+        .point-input-group input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .point-input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="ko"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;그리팅 x 식권대장 결제 연동 플로우&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; padding: 20px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.mobile-frame { width: 375px; height: 667px; background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; position: relative; display: flex; flex-direction: column; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.header { background: #333; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.content { padding: 20px; flex: 1; overflow-y: auto; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.section-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.pay-method { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.pay-method.active { border-color: #FF5A5A; background-color: #FFF0F0; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-primary { width: 100%; background: #FF5A5A; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-primary:hover { background: #E04848; }</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* 앱 오버레이 (식권대장 앱) */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.app-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #FF5A5A; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; padding: 20px; box-sizing: border-box; text-align: center; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.app-overlay h2 { margin-bottom: 10px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.app-overlay p { margin-bottom: 30px; font-size: 14px; opacity: 0.9; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-white { background: white; color: #FF5A5A; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* 포인트 입력 영역 (연동 후) */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.point-area { display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #eee; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.point-input-group { display: flex; gap: 10px; margin-top: 10px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.point-input-group input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.point-input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;div class="mobile-frame" id="greeting-app"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="header"&gt;그리팅 (Greeting) 주문/결제&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="content"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="section-title"&gt;결제 금액&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 style="margin-top:0;"&gt;25,000원&lt;/h2&gt;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="section-title" style="margin-top: 30px;"&gt;결제 수단 선택&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="pay-method" onclick="selectMethod('card')"&gt;신용카드&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="pay-method active" onclick="selectMethod('sikgwon')"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;span&gt;식권대장&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;span id="link-status" style="font-size: 12px; color: #FF5A5A; font-weight: bold;"&gt;(연동 필요)&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="point-area" id="point-area"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="font-size: 13px; color: #666;"&gt;보유 포인트: &lt;strong&gt;50,000 P&lt;/strong&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="point-input-group"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;input type="number" id="point-input" placeholder="0" value="25000"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button type="button"&gt;전액사용&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn-primary" id="action-btn" onclick="handlePayment()"&gt;식권대장 계정 연동하기&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="app-overlay" id="sikgwon-app"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;식권대장 APP&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;그리팅에서 식권대장 포인트를&lt;br&gt;사용할 수 있도록 연결하시겠습니까?&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn-white" onclick="approveLink()"&gt;동의하고 연결하기&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn-white" style="background: transparent; border: 1px solid white; color: white;" onclick="cancelLink()"&gt;취소&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let isLinked = false;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function selectMethod(method) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 실제 구현에서는 탭 전환 로직</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function handlePayment() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (!isLinked) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 1. 미연동 상태: 식권대장 앱 호출 (App Scheme)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('sikgwon-app').style.display = 'flex';</p>
-<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 2. 연동 상태: 바로 결제 승인 API 호출</p>
-<p class="p1"><span class="Apple-converted-space">            </span>alert("식권대장 포인트로 25,000원 결제가 완료되었습니다!");</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function approveLink() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 식권대장 앱에서 동의 완료 후 그리팅으로 돌아오는 로직</p>
-<p class="p1"><span class="Apple-converted-space">        </span>isLinked = true;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('sikgwon-app').style.display = 'none';</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// UI 업데이트</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('link-status').innerText = "(연동 완료)";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('link-status').style.color = "#4CAF50";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('action-btn').innerText = "25,000원 결제하기";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('point-area').style.display = 'block';</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function cancelLink() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('sikgwon-app').style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+<div class="mobile-frame" id="greeting-app">
+    <div class="header">그리팅 (Greeting) 주문/결제</div>
+    <div class="content">
+        <div class="section-title">결제 금액</div>
+        <h2 style="margin-top:0;">25,000원</h2>
+        
+        <div class="section-title" style="margin-top: 30px;">결제 수단 선택</div>
+        <div class="pay-method" onclick="selectMethod('card')">신용카드</div>
+        <div class="pay-method active" onclick="selectMethod('sikgwon')">
+            <span>식권대장</span>
+            <span id="link-status" style="font-size: 12px; color: #FF5A5A; font-weight: bold;">(연동 필요)</span>
+        </div>
+
+        <div class="point-area" id="point-area">
+            <div style="font-size: 13px; color: #666;">보유 포인트: <strong>50,000 P</strong></div>
+            <div class="point-input-group">
+                <input type="number" id="point-input" placeholder="0" value="25000">
+                <button type="button">전액사용</button>
+            </div>
+        </div>
+
+        <button class="btn-primary" id="action-btn" onclick="handlePayment()">식권대장 계정 연동하기</button>
+    </div>
+
+    <div class="app-overlay" id="sikgwon-app">
+        <h2>식권대장 APP</h2>
+        <p>그리팅에서 식권대장 포인트를<br>사용할 수 있도록 연결하시겠습니까?</p>
+        <button class="btn-white" onclick="approveLink()">동의하고 연결하기</button>
+        <button class="btn-white" style="background: transparent; border: 1px solid white; color: white;" onclick="cancelLink()">취소</button>
+    </div>
+</div>
+
+<script>
+    let isLinked = false;
+
+    function selectMethod(method) {
+    }
+
+    function handlePayment() {
+        if (!isLinked) {
+            document.getElementById('sikgwon-app').style.display = 'flex';
+        } else {
+            alert("식권대장 포인트로 25,000원 결제가 완료되었습니다!");
+        }
+    }
+
+    function approveLink() {
+        isLinked = true;
+        document.getElementById('sikgwon-app').style.display = 'none';
+        document.getElementById('link-status').innerText = "(연동 완료)";
+        document.getElementById('link-status').style.color = "#4CAF50";
+        document.getElementById('action-btn').innerText = "25,000원 결제하기";
+        document.getElementById('point-area').style.display = 'block';
+    }
+
+    function cancelLink() {
+        document.getElementById('sikgwon-app').style.display = 'none';
+    }
+</script>
+
 </body>
 </html>
