@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그리팅 x 식권대장 연동 (모션 분리 및 5번 복구)</title>
+    <title>그리팅 x 식권대장 연동 (API 다이렉트 결제 버전)</title>
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -50,12 +50,12 @@
             z-index: 2;
         }
 
-        /* 1) 앱 간 전환 모션 (아래에서 위로 올라옴) */
+        /* 앱 간 전환 모션 (아래에서 위로 올라옴) */
         .screen.anim-app {
             animation: slideUpApp 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         
-        /* 2) 같은 앱 내 페이지 전환 모션 (오른쪽에서 부드럽게 밀려옴) */
+        /* 같은 앱 내 페이지 전환 모션 */
         .screen.anim-page {
             animation: slideLeftPage 0.3s ease-out forwards;
         }
@@ -118,11 +118,12 @@
 
 <div class="test-panel">
     <h3>⚙️ 배경 시나리오 설정</h3>
-    <button class="scenario-btn" id="btn-not_installed" onclick="setScenario('not_installed')">1. 앱 미설치 케이스</button>
-    <button class="scenario-btn" id="btn-not_logged_in" onclick="setScenario('not_logged_in')">2. 미로그인 케이스</button>
+    <button class="scenario-btn" id="btn-not_installed" onclick="setScenario('not_installed')">1. 앱 미설치</button>
+    <button class="scenario-btn" id="btn-not_logged_in" onclick="setScenario('not_logged_in')">2. 미로그인</button>
     <button class="scenario-btn" id="btn-needs_link" onclick="setScenario('needs_link')">3. 최초 연동 필요</button>
-    <button class="scenario-btn" id="btn-no_points" onclick="setScenario('no_points')">4. 포인트 부족 케이스</button>
-    <button class="scenario-btn active-scenario" id="btn-success" onclick="setScenario('success')">5. 연동완료 및 결제 (정상)</button>
+    <button class="scenario-btn" id="btn-no_points" onclick="setScenario('no_points')">4. 결제 실패 (포인트 부족)</button>
+    <button class="scenario-btn" id="btn-expired" onclick="setScenario('expired')">5. 결제 실패 (유효기간 만료)</button>
+    <button class="scenario-btn active-scenario" id="btn-success" onclick="setScenario('success')">6. 정상 결제 성공</button>
     <p style="font-size: 11px; color: #888; margin-top: 15px; text-align: center;">시나리오 선택 후 앱 화면에서<br>식권대장 선택 -> <b>'결제하기'</b>를 클릭하세요.</p>
 </div>
 
@@ -140,26 +141,6 @@
         <div class="bottom-btn">
             <div style="font-size: 12px; color: #666; margin-bottom: 10px; text-align: center;">이용약관에 모두 동의합니다.</div>
             <button class="btn btn-greeting" onclick="executePaymentFlow()">결제하기</button>
-        </div>
-    </div>
-
-    <div id="screen-greeting-confirm" class="screen">
-        <div class="header greeting">그리팅 APP</div>
-        <div class="page-title">&lt; 결제 확인</div>
-        <div class="content" style="padding-top: 10px;">
-            <h2 style="font-size: 18px; text-align: center; margin-top: 20px;">식권대장 포인트로<br>결제하시겠습니까?</h2>
-            <div class="info-card">
-                <div class="info-row"><span class="info-label">사용 포인트</span><span class="info-value">15,000 P</span></div>
-                <div class="info-row"><span class="info-label">보유 포인트</span><span class="info-value">50,000 P</span></div>
-                <div class="info-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd;">
-                    <span class="info-label" style="color:#2a75d3; font-weight:bold;">사용 후 잔여포인트</span>
-                    <span class="info-value" style="color:#2a75d3;">35,000 P</span>
-                </div>
-            </div>
-        </div>
-        <div class="bottom-btn">
-            <button class="btn btn-cancel" onclick="switchScreen('screen-greeting-pay', 'page')">취소</button>
-            <button class="btn btn-greeting" onclick="showAlert('결제가 완료되었습니다!', () => switchScreen('screen-greeting-pay', 'page'))">최종 결제하기</button>
         </div>
     </div>
 
@@ -210,12 +191,13 @@
 </div>
 
 <script>
-    // 다시 '이미 연동된 상태(isLinked: true)'를 기본값으로 원상 복구
+    // 상태 변수에 'isExpired(유효기간 만료 여부)' 추가
     let currentState = {
         isLinked: true, 
         isInstalled: true,
         isLoggedIn: true,
-        hasEnoughPoints: true
+        hasEnoughPoints: true,
+        isExpired: false 
     };
 
     let isCaptainSelected = false; 
@@ -295,9 +277,10 @@
         }, 150);
     }
 
-    // 연동 완료 후 돌아왔을 때
+    // 연동(재인증) 완료 후 돌아왔을 때
     function completeLink() {
         currentState.isLinked = true; 
+        currentState.isExpired = false; // 재인증 완료
         switchScreen('screen-greeting-pay', 'app'); 
         
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
@@ -305,11 +288,11 @@
         isCaptainSelected = true;
         
         setTimeout(() => {
-            showAlert("식권대장 연동이 완료되었습니다.\n다시 '결제하기'를 눌러 최종 결제를 진행해주세요.");
+            showAlert("식권대장 인증이 완료되었습니다.\n다시 '결제하기'를 눌러 최종 결제를 진행해주세요.");
         }, 400); 
     }
 
-    // 결제하기 버튼 클릭
+    // 결제하기 버튼 클릭 (API 다이렉트 처리 로직)
     function executePaymentFlow() {
         if (!isCaptainSelected) {
             showAlert("결제수단을 '식권대장'으로 선택해주세요.");
@@ -317,12 +300,28 @@
         }
 
         if (currentState.isLinked) {
-            if (currentState.hasEnoughPoints) {
-                switchScreen('screen-greeting-confirm', 'page'); 
-            } else {
-                showAlert("결제방식 포인트가 부족합니다.\n\n보유: 5,000 P\n결제: 15,000 P\n부족: 10,000 P");
+            // 1. 유효기간 만료 체크 (API 응답 결과)
+            if (currentState.isExpired) {
+                showModal(
+                    "식권대장 연동 유효기간이 만료되었습니다.\n재인증(연동)을 진행하시겠습니까?",
+                    [
+                        { text: '취소', class: 'btn-cancel', action: hideModal },
+                        { text: '재인증하기', class: 'btn-greeting', action: checkCaptainApp }
+                    ]
+                );
+            } 
+            // 2. 정상 결제 체크 (API 응답 결과)
+            else if (currentState.hasEnoughPoints) {
+                // 결제 확인 화면 없이 바로 완료 알럿
+                showAlert("✅ 결제 성공\n식권대장 포인트로 결제가 완료되었습니다.");
+            } 
+            // 3. 포인트 부족 체크 (API 응답 결과)
+            else {
+                // 결제 확인 화면 없이 바로 실패 알럿
+                showAlert("❌ 결제 실패\n식권대장 포인트가 부족합니다.");
             }
         } else {
+            // 미연동 상태 (최초 결제 시도 시)
             showModal(
                 "해당 결제 방식은 식권대장 서비스와 연동하여 식권대장 포인트로 결제를 진행합니다.\n연동하시겠습니까?\n(식권대장 앱이 설치되어 있어야 합니다.)",
                 [
@@ -345,16 +344,17 @@
         document.getElementById(`btn-${type}`).classList.add('active-scenario');
 
         if (type === 'not_installed') {
-            currentState = { isLinked: false, isInstalled: false, isLoggedIn: false, hasEnoughPoints: true };
+            currentState = { isLinked: false, isInstalled: false, isLoggedIn: false, hasEnoughPoints: true, isExpired: false };
         } else if (type === 'not_logged_in') {
-            currentState = { isLinked: false, isInstalled: true, isLoggedIn: false, hasEnoughPoints: true };
+            currentState = { isLinked: false, isInstalled: true, isLoggedIn: false, hasEnoughPoints: true, isExpired: false };
         } else if (type === 'needs_link') {
-            currentState = { isLinked: false, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true };
+            currentState = { isLinked: false, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true, isExpired: false };
         } else if (type === 'no_points') {
-            currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: false };
+            currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: false, isExpired: false };
+        } else if (type === 'expired') {
+            currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true, isExpired: true };
         } else if (type === 'success') {
-            // 다시 '이미 연동되어 결제 가능한 상태'로 원상 복구
-            currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true };
+            currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true, isExpired: false };
         }
     }
 </script>
