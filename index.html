@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그리팅 x 식권대장 연동 시나리오 (애니메이션 적용)</title>
+    <title>그리팅 x 식권대장 연동 (모션 분리 버전)</title>
     <style>
         body {
-            font-family: 'Pretendard', -apple-system, sans-serif;
+            font-family: 'Pretendard', sans-serif;
             background-color: #f0f0f0;
             display: flex;
             justify-content: center;
@@ -39,27 +39,37 @@
             overflow: hidden; position: relative; border: 8px solid #333;
         }
 
-        /* ✨ 화면 전환 애니메이션 CSS ✨ */
+        /* ✨ 화면 전환 기본 CSS ✨ */
         .screen {
             width: 100%; height: 100%; flex-direction: column;
             position: absolute; top: 0; left: 0; background: #fff;
-            
-            /* display: none 대신 투명도와 위치 이동 사용 */
-            display: flex; 
-            opacity: 0; 
-            visibility: hidden;
-            transform: translateY(30px) scale(0.98); /* 살짝 아래에서 위로 올라오는 효과 */
-            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.4s;
-            z-index: 1;
+            display: none; /* 기본 숨김 */
         }
         .screen.active {
-            opacity: 1; 
-            visibility: visible;
-            transform: translateY(0) scale(1);
+            display: flex; /* 활성화 시 노출 */
             z-index: 2;
         }
 
-        /* 헤더 UI (그리팅, 식권대장 구분) */
+        /* 1) 앱 간 전환 모션 (아래에서 위로 올라옴) */
+        .screen.anim-app {
+            animation: slideUpApp 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        
+        /* 2) 같은 앱 내 페이지 전환 모션 (오른쪽에서 부드럽게 밀려옴) */
+        .screen.anim-page {
+            animation: slideLeftPage 0.3s ease-out forwards;
+        }
+
+        @keyframes slideUpApp {
+            0% { transform: translateY(40px) scale(0.96); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes slideLeftPage {
+            0% { transform: translateX(20px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 헤더 UI */
         .header { padding: 20px; text-align: center; font-size: 18px; font-weight: bold; }
         .header.greeting { background-color: #2a75d3; color: #fff; } 
         .header.captain { background-color: #00C365; color: #fff; } 
@@ -78,30 +88,22 @@
         .btn-captain { background-color: #00C365; color: white; }
         .btn-cancel { background-color: #f4f4f4; color: #666; margin-bottom: 10px;}
         
-        /* 결제수단 버튼 */
         .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;}
         .pay-btn { border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .pay-btn.selected { border-color: #00C365; background-color: #e8f8f0; color: #00C365; }
 
-        /* ✨ 모달 (알럿) 애니메이션 CSS ✨ */
+        /* 모달 (알럿) 애니메이션 */
         .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 100;
-            
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s ease;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
-        .modal-overlay.active {
-            opacity: 1; pointer-events: auto;
-        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal { 
             background: #fff; border-radius: 12px; width: 80%; padding: 20px; text-align: center; 
             transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        .modal-overlay.active .modal {
-            transform: translateY(0);
-        }
-
+        .modal-overlay.active .modal { transform: translateY(0); }
         .modal p { font-size: 14px; line-height: 1.5; color: #333; margin-bottom: 20px; white-space: pre-line; }
         .modal-btns { display: flex; gap: 10px; }
         .modal-btns .btn { padding: 12px; font-size: 14px; margin-bottom: 0; }
@@ -156,15 +158,14 @@
             </div>
         </div>
         <div class="bottom-btn">
-            <button class="btn btn-cancel" onclick="resetToHome()">취소</button>
-            <button class="btn btn-greeting" onclick="showAlert('결제가 완료되었습니다!', resetToHome)">최종 결제하기</button>
+            <button class="btn btn-cancel" onclick="switchScreen('screen-greeting-pay', 'page')">취소</button>
+            <button class="btn btn-greeting" onclick="showAlert('결제가 완료되었습니다!', () => switchScreen('screen-greeting-pay', 'page'))">최종 결제하기</button>
         </div>
     </div>
 
     <div id="screen-captain-blank" class="screen">
         <div class="header captain">식권대장</div>
-        <div class="content">
-        </div>
+        <div class="content"></div>
     </div>
 
     <div id="screen-captain-consent" class="screen">
@@ -178,8 +179,8 @@
             </div>
         </div>
         <div class="bottom-btn">
-            <button class="btn btn-cancel" onclick="resetToHome()">취소</button>
-            <button class="btn btn-captain" onclick="switchScreen('screen-captain-success')">동의하고 연동하기</button>
+            <button class="btn btn-cancel" onclick="switchScreen('screen-greeting-pay', 'app')">취소</button>
+            <button class="btn btn-captain" onclick="switchScreen('screen-captain-success', 'page')">동의하고 연동하기</button>
         </div>
     </div>
 
@@ -218,17 +219,26 @@
 
     let isCaptainSelected = false; 
 
-    function resetToHome() {
-        switchScreen('screen-greeting-pay');
-    }
+    // 화면 전환 함수 (transitionType: 'app' | 'page' | 'none')
+    function switchScreen(screenId, transitionType = 'page') {
+        document.querySelectorAll('.screen').forEach(s => {
+            s.classList.remove('active', 'anim-app', 'anim-page');
+        });
 
-    function switchScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
+        const targetScreen = document.getElementById(screenId);
+        targetScreen.classList.add('active');
+
+        // 전달받은 타입에 따라 모션 클래스 추가
+        if (transitionType === 'app') {
+            targetScreen.classList.add('anim-app');
+        } else if (transitionType === 'page') {
+            targetScreen.classList.add('anim-page');
+        }
+        
         hideModal();
     }
 
-    // 모달 호출 함수 (애니메이션 클래스 active 사용)
+    // 모달 호출/숨김 로직
     function showModal(text, buttons) {
         document.getElementById('modal-text').innerHTML = text;
         const btnGroup = document.getElementById('modal-btn-group');
@@ -251,14 +261,13 @@
         showModal(text, [{text: '확인', class: 'btn-greeting', action: callback}]); 
     }
 
-    // 1. 일반 결제 수단 클릭
+    // 결제 수단 클릭
     function selectOtherPay(element) {
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
         element.classList.add('selected');
         isCaptainSelected = false;
     }
 
-    // 2. 식권대장 결제 수단 클릭
     function selectCaptainPay() {
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
         document.getElementById('btn-pay-captain').classList.add('selected');
@@ -267,31 +276,30 @@
 
     // 식권대장 앱 상태 체크
     function checkCaptainApp() {
-        hideModal(); // 화면 전환 전 기존 모달 닫기
+        hideModal();
         setTimeout(() => {
             if (!currentState.isInstalled) {
                 showAlert("식권대장 앱이 설치되어 있지 않습니다.\n앱스토어/플레이스토어로 이동합니다.");
             } else {
                 if (!currentState.isLoggedIn) {
-                    switchScreen('screen-captain-blank');
-                    // 애니메이션 시간 고려하여 약간 딜레이 후 알럿 노출
+                    switchScreen('screen-captain-blank', 'app'); // 그리팅 -> 식권대장 (앱 전환 모션)
                     setTimeout(() => {
                         showModal(
                             "로그인 후 다시 요청해 주세요.",
-                            [{ text: '확인', class: 'btn-captain', action: resetToHome }]
+                            [{ text: '확인', class: 'btn-captain', action: () => switchScreen('screen-greeting-pay', 'app') }]
                         );
                     }, 400);
                 } else {
-                    switchScreen('screen-captain-consent');
+                    switchScreen('screen-captain-consent', 'app'); // 그리팅 -> 식권대장 (앱 전환 모션)
                 }
             }
-        }, 150); // 부드러운 전환을 위한 미세한 딜레이
+        }, 150);
     }
 
     // 연동 완료 후 돌아왔을 때
     function completeLink() {
         currentState.isLinked = true; 
-        switchScreen('screen-greeting-pay');
+        switchScreen('screen-greeting-pay', 'app'); // 식권대장 -> 그리팅 (앱 전환 모션)
         
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
         document.getElementById('btn-pay-captain').classList.add('selected');
@@ -299,10 +307,10 @@
         
         setTimeout(() => {
             showAlert("식권대장 연동이 완료되었습니다.\n다시 '결제하기'를 눌러 최종 결제를 진행해주세요.");
-        }, 400); // 화면 전환 애니메이션 완료 후 알럿
+        }, 400); 
     }
 
-    // 3. 결제하기 버튼 클릭 시 로직
+    // 결제하기 버튼 클릭
     function executePaymentFlow() {
         if (!isCaptainSelected) {
             showAlert("결제수단을 '식권대장'으로 선택해주세요.");
@@ -311,7 +319,7 @@
 
         if (currentState.isLinked) {
             if (currentState.hasEnoughPoints) {
-                switchScreen('screen-greeting-confirm'); 
+                switchScreen('screen-greeting-confirm', 'page'); // 그리팅 내부 이동 (페이지 전환 모션)
             } else {
                 showAlert("결제방식 포인트가 부족합니다.\n\n보유: 5,000 P\n결제: 15,000 P\n부족: 10,000 P");
             }
@@ -328,7 +336,7 @@
 
     // 시나리오 버튼 클릭
     function setScenario(type) {
-        resetToHome();
+        switchScreen('screen-greeting-pay', 'none'); // 초기화 시에는 모션 없이 바로 변경
         hideModal();
         
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
