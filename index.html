@@ -44,10 +44,10 @@
         }
         .screen.active { display: flex; }
 
-        /* 헤더 UI (그리팅, 식권대장 구분 유지) */
+        /* 헤더 UI (그리팅, 식권대장 구분) */
         .header { padding: 20px; text-align: center; font-size: 18px; font-weight: bold; }
-        .header.greeting { background-color: #2a75d3; color: #fff; } /* 그리팅 파란색 헤더 */
-        .header.captain { background-color: #00C365; color: #fff; } /* 식권대장 초록색 헤더 */
+        .header.greeting { background-color: #2a75d3; color: #fff; } 
+        .header.captain { background-color: #00C365; color: #fff; } 
         
         .page-title { padding: 15px 20px 0; font-size: 18px; font-weight: bold; color: #333; }
         .content { flex: 1; padding: 20px; overflow-y: auto; }
@@ -117,14 +117,24 @@
         <div class="content" style="padding-top: 10px;">
             <h2 style="font-size: 18px; text-align: center; margin-top: 20px;">식권대장 포인트로<br>결제하시겠습니까?</h2>
             <div class="info-card">
-                <div class="info-row"><span class="info-label">결제 금액</span><span class="info-value">15,000 P</span></div>
-                <div class="info-row"><span class="info-label">사용 후 잔여</span><span class="info-value">35,000 P</span></div>
+                <div class="info-row"><span class="info-label">사용 포인트</span><span class="info-value">15,000 P</span></div>
+                <div class="info-row"><span class="info-label">보유 포인트</span><span class="info-value">50,000 P</span></div>
+                <div class="info-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd;">
+                    <span class="info-label" style="color:#2a75d3; font-weight:bold;">사용 후 잔여포인트</span>
+                    <span class="info-value" style="color:#2a75d3;">35,000 P</span>
+                </div>
             </div>
         </div>
         <div class="bottom-btn">
             <button class="btn btn-cancel" onclick="resetToHome()">취소</button>
             <button class="btn btn-greeting" onclick="showAlert('결제가 완료되었습니다!', resetToHome)">최종 결제하기</button>
         </div>
+    </div>
+
+    <div id="screen-captain-blank" class="screen">
+        <div class="header captain">식권대장</div>
+        <div class="content">
+            </div>
     </div>
 
     <div id="screen-captain-consent" class="screen">
@@ -134,6 +144,7 @@
             <div class="info-card">
                 <div class="info-row"><span class="info-label">요청 서비스</span><span class="info-value">그리팅</span></div>
                 <div class="info-row"><span class="info-label">그리팅 ID</span><span class="info-value">user@test.com</span></div>
+                <div class="info-row"><span class="info-label">승인 시 유효기간</span><span class="info-value">2027.03.30</span></div>
             </div>
         </div>
         <div class="bottom-btn">
@@ -147,6 +158,12 @@
         <div class="content">
             <h2 style="text-align: center; margin-top: 50px;">✅<br>연동 완료</h2>
             <p style="text-align: center; color: #666;">그리팅에서 식권대장 포인트로<br>결제할 수 있습니다.</p>
+            
+            <div class="info-card" style="margin-top: 30px;">
+                <div class="info-row"><span class="info-label">완료일자</span><span class="info-value">2026.03.30</span></div>
+                <div class="info-row"><span class="info-label">유효기간</span><span class="info-value">2027.03.30</span></div>
+                <div class="info-row"><span class="info-label">연동서비스</span><span class="info-value">그리팅</span></div>
+            </div>
         </div>
         <div class="bottom-btn">
             <button class="btn btn-captain" onclick="completeLink()">그리팅으로 돌아가기</button>
@@ -208,7 +225,7 @@
         isCaptainSelected = false;
     }
 
-    // 2. 식권대장 결제 수단 클릭 (선택 효과만 주고 연동 체크는 안 함)
+    // 2. 식권대장 결제 수단 클릭
     function selectCaptainPay() {
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
         document.getElementById('btn-pay-captain').classList.add('selected');
@@ -221,7 +238,14 @@
             showAlert("식권대장 앱이 설치되어 있지 않습니다.\n앱스토어/플레이스토어로 이동합니다.");
         } else {
             if (!currentState.isLoggedIn) {
-                showAlert("로그인 후 다시 요청해 주세요.\n(식권대장 로그인 필요)");
+                // [수정사항 1 반영] 식권대장 화면으로 전환 후 알럿 노출
+                switchScreen('screen-captain-blank');
+                setTimeout(() => {
+                    showModal(
+                        "로그인 후 다시 요청해 주세요.",
+                        [{ text: '확인', class: 'btn-captain', action: resetToHome }] // 확인 누르면 그리팅으로 돌아감
+                    );
+                }, 100);
             } else {
                 switchScreen('screen-captain-consent');
             }
@@ -243,7 +267,7 @@
         document.getElementById('btn-success').classList.add('active-scenario');
     }
 
-    // 3. 결제하기 버튼 클릭 시 로직 (여기서 연동 여부 체크)
+    // 3. 결제하기 버튼 클릭 시 로직
     function executePaymentFlow() {
         if (!isCaptainSelected) {
             showAlert("결제수단을 '식권대장'으로 선택해주세요.");
