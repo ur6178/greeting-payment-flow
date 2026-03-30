@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그리팅 x 식권대장 연동 (모션 분리 버전)</title>
+    <title>그리팅 x 식권대장 연동 (모션 분리 및 5번 복구)</title>
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -39,14 +39,14 @@
             overflow: hidden; position: relative; border: 8px solid #333;
         }
 
-        /* ✨ 화면 전환 기본 CSS ✨ */
+        /* 화면 전환 기본 CSS */
         .screen {
             width: 100%; height: 100%; flex-direction: column;
             position: absolute; top: 0; left: 0; background: #fff;
-            display: none; /* 기본 숨김 */
+            display: none; 
         }
         .screen.active {
-            display: flex; /* 활성화 시 노출 */
+            display: flex; 
             z-index: 2;
         }
 
@@ -122,7 +122,7 @@
     <button class="scenario-btn" id="btn-not_logged_in" onclick="setScenario('not_logged_in')">2. 미로그인 케이스</button>
     <button class="scenario-btn" id="btn-needs_link" onclick="setScenario('needs_link')">3. 최초 연동 필요</button>
     <button class="scenario-btn" id="btn-no_points" onclick="setScenario('no_points')">4. 포인트 부족 케이스</button>
-    <button class="scenario-btn active-scenario" id="btn-success" onclick="setScenario('success')">5. 전체 풀 플로우 (정상결제)</button>
+    <button class="scenario-btn active-scenario" id="btn-success" onclick="setScenario('success')">5. 연동완료 및 결제 (정상)</button>
     <p style="font-size: 11px; color: #888; margin-top: 15px; text-align: center;">시나리오 선택 후 앱 화면에서<br>식권대장 선택 -> <b>'결제하기'</b>를 클릭하세요.</p>
 </div>
 
@@ -210,8 +210,9 @@
 </div>
 
 <script>
+    // 다시 '이미 연동된 상태(isLinked: true)'를 기본값으로 원상 복구
     let currentState = {
-        isLinked: false, 
+        isLinked: true, 
         isInstalled: true,
         isLoggedIn: true,
         hasEnoughPoints: true
@@ -219,7 +220,7 @@
 
     let isCaptainSelected = false; 
 
-    // 화면 전환 함수 (transitionType: 'app' | 'page' | 'none')
+    // 화면 전환 함수
     function switchScreen(screenId, transitionType = 'page') {
         document.querySelectorAll('.screen').forEach(s => {
             s.classList.remove('active', 'anim-app', 'anim-page');
@@ -228,7 +229,6 @@
         const targetScreen = document.getElementById(screenId);
         targetScreen.classList.add('active');
 
-        // 전달받은 타입에 따라 모션 클래스 추가
         if (transitionType === 'app') {
             targetScreen.classList.add('anim-app');
         } else if (transitionType === 'page') {
@@ -238,7 +238,6 @@
         hideModal();
     }
 
-    // 모달 호출/숨김 로직
     function showModal(text, buttons) {
         document.getElementById('modal-text').innerHTML = text;
         const btnGroup = document.getElementById('modal-btn-group');
@@ -282,7 +281,7 @@
                 showAlert("식권대장 앱이 설치되어 있지 않습니다.\n앱스토어/플레이스토어로 이동합니다.");
             } else {
                 if (!currentState.isLoggedIn) {
-                    switchScreen('screen-captain-blank', 'app'); // 그리팅 -> 식권대장 (앱 전환 모션)
+                    switchScreen('screen-captain-blank', 'app'); 
                     setTimeout(() => {
                         showModal(
                             "로그인 후 다시 요청해 주세요.",
@@ -290,7 +289,7 @@
                         );
                     }, 400);
                 } else {
-                    switchScreen('screen-captain-consent', 'app'); // 그리팅 -> 식권대장 (앱 전환 모션)
+                    switchScreen('screen-captain-consent', 'app'); 
                 }
             }
         }, 150);
@@ -299,7 +298,7 @@
     // 연동 완료 후 돌아왔을 때
     function completeLink() {
         currentState.isLinked = true; 
-        switchScreen('screen-greeting-pay', 'app'); // 식권대장 -> 그리팅 (앱 전환 모션)
+        switchScreen('screen-greeting-pay', 'app'); 
         
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
         document.getElementById('btn-pay-captain').classList.add('selected');
@@ -319,7 +318,7 @@
 
         if (currentState.isLinked) {
             if (currentState.hasEnoughPoints) {
-                switchScreen('screen-greeting-confirm', 'page'); // 그리팅 내부 이동 (페이지 전환 모션)
+                switchScreen('screen-greeting-confirm', 'page'); 
             } else {
                 showAlert("결제방식 포인트가 부족합니다.\n\n보유: 5,000 P\n결제: 15,000 P\n부족: 10,000 P");
             }
@@ -336,7 +335,7 @@
 
     // 시나리오 버튼 클릭
     function setScenario(type) {
-        switchScreen('screen-greeting-pay', 'none'); // 초기화 시에는 모션 없이 바로 변경
+        switchScreen('screen-greeting-pay', 'none'); 
         hideModal();
         
         document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
@@ -354,7 +353,8 @@
         } else if (type === 'no_points') {
             currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: false };
         } else if (type === 'success') {
-            currentState = { isLinked: false, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true };
+            // 다시 '이미 연동되어 결제 가능한 상태'로 원상 복구
+            currentState = { isLinked: true, isInstalled: true, isLoggedIn: true, hasEnoughPoints: true };
         }
     }
 </script>
