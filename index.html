@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그리팅 x 식권대장 연동 시나리오 테스트 (완전 수동)</title>
+    <title>그리팅 x 식권대장 연동 시나리오 (수동)</title>
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -17,59 +17,39 @@
         
         /* 시나리오 리모컨 패널 (기획자용) */
         .test-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border: 2px solid #333;
-            width: 260px;
+            position: absolute; top: 20px; right: 20px;
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid #333; width: 260px;
         }
         .test-panel h3 { margin-top: 0; font-size: 16px; color: #333; margin-bottom: 15px; text-align: center;}
         
         .scenario-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 8px;
-            background: #fff;
-            border: 1px solid #ddd;
-            color: #333;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: left;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.2s;
+            display: block; width: 100%; padding: 12px; margin-bottom: 8px;
+            background: #fff; border: 1px solid #ddd; color: #333;
+            border-radius: 8px; cursor: pointer; text-align: left;
+            font-size: 14px; font-weight: bold; transition: all 0.2s;
         }
         .scenario-btn:hover { background: #f9f9f9; border-color: #2a75d3; color: #2a75d3; }
         .scenario-btn.active-scenario { border-color: #2a75d3; background-color: #eaf2ff; color: #2a75d3; }
 
         /* 폰 프레임 공통 */
         .phone-frame {
-            width: 375px; height: 812px;
-            background-color: #ffffff;
-            border-radius: 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-            position: relative;
-            border: 8px solid #333;
+            width: 375px; height: 812px; background-color: #ffffff;
+            border-radius: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden; position: relative; border: 8px solid #333;
         }
         .screen {
-            width: 100%; height: 100%;
-            display: none; flex-direction: column;
-            position: absolute; top: 0; left: 0;
-            background: #fff;
+            width: 100%; height: 100%; display: none; flex-direction: column;
+            position: absolute; top: 0; left: 0; background: #fff;
         }
         .screen.active { display: flex; }
 
-        /* UI 요소 */
-        .header { padding: 20px; text-align: center; font-size: 18px; font-weight: bold; border-bottom: 1px solid #eee; }
-        .header.greeting { background-color: #fff; color: #333; }
-        .header.captain { background-color: #00C365; color: #fff; }
+        /* 헤더 UI (그리팅, 식권대장 구분 유지) */
+        .header { padding: 20px; text-align: center; font-size: 18px; font-weight: bold; }
+        .header.greeting { background-color: #2a75d3; color: #fff; } /* 그리팅 파란색 헤더 */
+        .header.captain { background-color: #00C365; color: #fff; } /* 식권대장 초록색 헤더 */
         
+        .page-title { padding: 15px 20px 0; font-size: 18px; font-weight: bold; color: #333; }
         .content { flex: 1; padding: 20px; overflow-y: auto; }
         .bottom-btn { padding: 20px; background: #fff; border-top: 1px solid #eee; }
         
@@ -81,8 +61,9 @@
         .btn-captain { background-color: #00C365; color: white; }
         .btn-cancel { background-color: #f4f4f4; color: #666; margin-bottom: 10px;}
         
+        /* 결제수단 버튼 */
         .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;}
-        .pay-btn { border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; font-weight: bold; }
+        .pay-btn { border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .pay-btn.selected { border-color: #00C365; background-color: #e8f8f0; color: #00C365; }
 
         /* 모달 (알럿) */
@@ -110,16 +91,18 @@
     <button class="scenario-btn" id="btn-needs_link" onclick="setScenario('needs_link')">3. 최초 연동 필요</button>
     <button class="scenario-btn" id="btn-no_points" onclick="setScenario('no_points')">4. 포인트 부족 케이스</button>
     <button class="scenario-btn active-scenario" id="btn-success" onclick="setScenario('success')">5. 연동완료 및 결제</button>
+    <p style="font-size: 11px; color: #888; margin-top: 15px; text-align: center;">시나리오 선택 후 앱 화면에서<br>식권대장 선택 -> <b>'결제하기'</b>를 클릭하세요.</p>
 </div>
 
 <div class="phone-frame">
     <div id="screen-greeting-pay" class="screen active">
-        <div class="header greeting">&lt; 주문결제</div>
-        <div class="content">
+        <div class="header greeting">그리팅 APP</div>
+        <div class="page-title">&lt; 주문결제</div>
+        <div class="content" style="padding-top: 10px;">
             <div style="font-size: 16px; font-weight: bold;">결제수단 선택</div>
             <div class="pay-grid">
-                <div class="pay-btn">신용카드</div>
-                <div class="pay-btn selected">식권대장</div>
+                <div class="pay-btn" onclick="selectOtherPay(this)">신용카드</div>
+                <div id="btn-pay-captain" class="pay-btn" onclick="selectCaptainPay()">식권대장</div>
             </div>
         </div>
         <div class="bottom-btn">
@@ -129,9 +112,10 @@
     </div>
 
     <div id="screen-greeting-confirm" class="screen">
-        <div class="header greeting">&lt; 결제 확인</div>
-        <div class="content">
-            <h2 style="font-size: 18px; text-align: center; margin-top: 30px;">식권대장 포인트로<br>결제하시겠습니까?</h2>
+        <div class="header greeting">그리팅 APP</div>
+        <div class="page-title">&lt; 결제 확인</div>
+        <div class="content" style="padding-top: 10px;">
+            <h2 style="font-size: 18px; text-align: center; margin-top: 20px;">식권대장 포인트로<br>결제하시겠습니까?</h2>
             <div class="info-card">
                 <div class="info-row"><span class="info-label">결제 금액</span><span class="info-value">15,000 P</span></div>
                 <div class="info-row"><span class="info-label">사용 후 잔여</span><span class="info-value">35,000 P</span></div>
@@ -186,6 +170,8 @@
         hasEnoughPoints: true
     };
 
+    let isCaptainSelected = false; // 식권대장 선택 여부 변수
+
     function resetToHome() {
         switchScreen('screen-greeting-pay');
     }
@@ -215,25 +201,21 @@
         showModal(text, [{text: '확인', class: 'btn-greeting', action: callback}]); 
     }
 
-    // 메인 결제 로직 (결제하기 버튼 클릭 시에만 실행)
-    function executePaymentFlow() {
-        if (currentState.isLinked) {
-            if (currentState.hasEnoughPoints) {
-                switchScreen('screen-greeting-confirm'); 
-            } else {
-                showAlert("결제방식 포인트가 부족합니다.\n\n보유: 5,000 P\n결제: 15,000 P\n부족: 10,000 P");
-            }
-        } else {
-            showModal(
-                "해당 결제 방식은 식권대장 서비스와 연동하여 식권대장 포인트로 결제를 진행합니다.\n연동하시겠습니까?\n(식권대장 앱이 설치되어 있어야 합니다.)",
-                [
-                    { text: '취소', class: 'btn-cancel', action: hideModal },
-                    { text: '연동하기', class: 'btn-greeting', action: checkCaptainApp }
-                ]
-            );
-        }
+    // 1. 일반 결제 수단 클릭
+    function selectOtherPay(element) {
+        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+        element.classList.add('selected');
+        isCaptainSelected = false;
     }
 
+    // 2. 식권대장 결제 수단 클릭 (선택 효과만 주고 연동 체크는 안 함)
+    function selectCaptainPay() {
+        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('btn-pay-captain').classList.add('selected');
+        isCaptainSelected = true;
+    }
+
+    // 식권대장 앱 상태 체크
     function checkCaptainApp() {
         if (!currentState.isInstalled) {
             showAlert("식권대장 앱이 설치되어 있지 않습니다.\n앱스토어/플레이스토어로 이동합니다.");
@@ -246,25 +228,59 @@
         }
     }
 
+    // 연동 완료 후 돌아왔을 때
     function completeLink() {
         currentState.isLinked = true; 
         switchScreen('screen-greeting-pay');
         
-        // 연동 완료 후 상태를 5번으로 맞춤
+        // 연동 성공했으니 식권대장 버튼을 선택 상태로 유지
+        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('btn-pay-captain').classList.add('selected');
+        isCaptainSelected = true;
+        
+        // 시나리오 상태를 5번으로 자동 이동
         document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active-scenario'));
         document.getElementById('btn-success').classList.add('active-scenario');
     }
 
-    // 시나리오 버튼 클릭 시 내부 상태만 조용히 변경
+    // 3. 결제하기 버튼 클릭 시 로직 (여기서 연동 여부 체크)
+    function executePaymentFlow() {
+        if (!isCaptainSelected) {
+            showAlert("결제수단을 '식권대장'으로 선택해주세요.");
+            return;
+        }
+
+        // 연동이 되어 있는 경우
+        if (currentState.isLinked) {
+            if (currentState.hasEnoughPoints) {
+                switchScreen('screen-greeting-confirm'); 
+            } else {
+                showAlert("결제방식 포인트가 부족합니다.\n\n보유: 5,000 P\n결제: 15,000 P\n부족: 10,000 P");
+            }
+        } else {
+            // 연동이 안 되어 있는 경우 (결제하기 버튼 눌렀을 때 팝업 노출)
+            showModal(
+                "해당 결제 방식은 식권대장 서비스와 연동하여 식권대장 포인트로 결제를 진행합니다.\n연동하시겠습니까?\n(식권대장 앱이 설치되어 있어야 합니다.)",
+                [
+                    { text: '취소', class: 'btn-cancel', action: hideModal },
+                    { text: '연동하기', class: 'btn-greeting', action: checkCaptainApp }
+                ]
+            );
+        }
+    }
+
+    // 시나리오 버튼 클릭 (화면 변화 없이 내부 상태만 초기화 및 변경)
     function setScenario(type) {
         resetToHome();
         hideModal();
         
-        // 버튼 활성화 표시만 변경 (우측 패널에서만 변화)
+        // 결제수단 선택 초기화
+        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+        isCaptainSelected = false;
+
         document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active-scenario'));
         document.getElementById(`btn-${type}`).classList.add('active-scenario');
 
-        // 내부 변수값 조작 (화면에는 아무 변화 없음)
         if (type === 'not_installed') {
             currentState = { isLinked: false, isInstalled: false, isLoggedIn: false, hasEnoughPoints: true };
         } else if (type === 'not_logged_in') {
