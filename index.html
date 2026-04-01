@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그리팅 x 식권대장 연동 (안내 문구 추가)</title>
+    <title>그리팅 x 식권대장 연동 (동의 화면 고도화)</title>
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -81,6 +81,7 @@
         .btn-greeting { background-color: #2a75d3; color: white; }
         .btn-captain { background-color: #00C365; color: white; }
         .btn-cancel { background-color: #f4f4f4; color: #666; margin-bottom: 10px;}
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
         
         .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;}
         .pay-btn { border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; font-weight: bold; cursor: pointer; transition: 0.2s;}
@@ -102,10 +103,10 @@
         .modal-btns { display: flex; gap: 10px; }
         .modal-btns .btn { padding: 12px; font-size: 14px; margin-bottom: 0; }
         
-        .info-card { background: #f9f9f9; border-radius: 12px; padding: 20px; margin-top: 20px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+        .info-card { background: #f9f9f9; border-radius: 12px; padding: 20px; margin-top: 10px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
         .info-label { color: #666; }
-        .info-value { font-weight: bold; color: #333; }
+        .info-value { font-weight: bold; color: #333; text-align: right; }
 
         /* 브라우저 로딩 화면 */
         .loading-overlay {
@@ -187,21 +188,29 @@
     <div id="screen-captain-consent" class="screen">
         <div class="header captain">식권대장</div>
         <div class="content">
-            <h2 style="font-size: 20px; margin-top: 30px; margin-bottom: 10px;">그리팅과<br>연동하시겠습니까?</h2>
+            <h2 style="font-size: 20px; margin-top: 15px; margin-bottom: 12px;">그리팅과<br>연동하시겠습니까?</h2>
             
-            <p style="font-size: 14px; color: #666; margin-top: 0; margin-bottom: 20px; line-height: 1.4;">
-                연동 시 식권대장 포인트로<br>그리팅 상품을 결제할 수 있습니다.
+            <p style="font-size: 14px; color: #555; margin-top: 0; margin-bottom: 15px; line-height: 1.5; letter-spacing: -0.3px;">
+                식권대장 포인트로 그리팅 상품을 간편하게 결제할 수 있도록 두 서비스를 연결합니다.<br><br>
+                동의하시면 그리팅 앱 내에서 식권대장 포인트 잔액을 확인하고 결제에 바로 사용할 수 있습니다.
             </p>
 
             <div class="info-card">
-                <div class="info-row"><span class="info-label">요청 서비스</span><span class="info-value">그리팅</span></div>
-                <div class="info-row"><span class="info-label">그리팅 ID</span><span class="info-value">user@test.com</span></div>
-                <div class="info-row"><span class="info-label">승인 시 유효기간</span><span class="info-value">2027.03.30</span></div>
+                <div class="info-row"><span class="info-label">요청 서비스</span><span class="info-value">그리팅 (Greeting)</span></div>
+                <div class="info-row"><span class="info-label">연결 계정</span><span class="info-value">user@test.com</span></div>
+                <div class="info-row"><span class="info-label">제공 정보</span><span class="info-value" style="color:#2a75d3;">포인트 조회 및 결제 승인</span></div>
+                <div class="info-row"><span class="info-label">요청 일자</span><span class="info-value">2026.04.01</span></div>
+                <div class="info-row"><span class="info-label">유효 기간</span><span class="info-value">연동 해제 시까지</span></div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #333; cursor: pointer;" onclick="toggleConsent()">
+                <input type="checkbox" id="chk-agree" checked style="width: 18px; height: 18px; accent-color: #00C365; pointer-events: none;">
+                <label style="cursor: pointer;">[필수] 제3자 정보 제공 동의</label>
             </div>
         </div>
         <div class="bottom-btn">
             <button class="btn btn-cancel" onclick="switchScreen('screen-greeting-pay', 'app')">취소</button>
-            <button class="btn btn-captain" onclick="switchScreen('screen-captain-success', 'page')">동의하고 연동하기</button>
+            <button id="btn-submit-consent" class="btn btn-captain" onclick="switchScreen('screen-captain-success', 'page')">동의하고 연동하기</button>
         </div>
     </div>
 
@@ -212,8 +221,8 @@
             <p style="text-align: center; color: #666;">그리팅에서 식권대장 포인트로<br>결제할 수 있습니다.</p>
             
             <div class="info-card" style="margin-top: 30px;">
-                <div class="info-row"><span class="info-label">완료일자</span><span class="info-value">2026.03.30</span></div>
-                <div class="info-row"><span class="info-label">유효기간</span><span class="info-value">2027.03.30</span></div>
+                <div class="info-row"><span class="info-label">완료일자</span><span class="info-value">2026.04.01</span></div>
+                <div class="info-row"><span class="info-label">유효기간</span><span class="info-value">해제 시까지 유지</span></div>
                 <div class="info-row"><span class="info-label">연동서비스</span><span class="info-value">그리팅</span></div>
             </div>
         </div>
@@ -293,12 +302,19 @@
         isCaptainSelected = true;
     }
 
+    // 동의 체크박스 토글 함수 (체크 해제 시 연동 버튼 비활성화)
+    function toggleConsent() {
+        const chk = document.getElementById('chk-agree');
+        const btn = document.getElementById('btn-submit-consent');
+        chk.checked = !chk.checked;
+        btn.disabled = !chk.checked;
+    }
+
     // 식권대장 앱 상태 체크
     function checkCaptainApp() {
         hideModal();
         setTimeout(() => {
             if (!currentState.isInstalled) {
-                // 1번 시나리오: 알럿 대신 로딩 화면 띄운 후 스토어로 이동
                 document.getElementById('loading-overlay').classList.add('active');
                 setTimeout(() => {
                     document.getElementById('loading-overlay').classList.remove('active');
@@ -337,7 +353,6 @@
         }, 1500); 
     }
 
-    // 스토어 버튼 초기화 
     function resetAppStore() {
         const btn = document.getElementById('btn-install');
         btn.innerText = "받기";
